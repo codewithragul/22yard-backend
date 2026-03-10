@@ -157,29 +157,28 @@ app.post("/check-balance", async (req, res) => {
 
     console.log("Checking gift card ending with:", last4);
 
-    const response = await axios.get(
-      `https://${SHOP}/admin/api/2024-01/gift_cards.json`,
-      {
-        headers: {
-          "X-Shopify-Access-Token": TOKEN,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    const giftCards = response.data.gift_cards || [];
-
-    const matchedCard = giftCards.find(card =>
-      card.last_characters &&
-      card.last_characters.toLowerCase() === last4
-    );
-
-    if (!matchedCard) {
-      return res.status(404).json({
-        success: false,
-        message: "Invalid gift card"
-      });
+  const response = await axios.get(
+  `https://${SHOP}/admin/api/2024-01/gift_cards/search.json`,
+  {
+    headers: {
+      "X-Shopify-Access-Token": TOKEN,
+      "Content-Type": "application/json"
+    },
+    params: {
+      query: `last_characters:${last4}`
     }
+  }
+);
+
+const giftCards = response.data.gift_cards || [];
+const matchedCard = giftCards[0];
+
+if (!matchedCard) {
+  return res.status(404).json({
+    success: false,
+    message: "Invalid gift card"
+  });
+}
 
     /* Check disabled */
     if (matchedCard.disabled_at) {
