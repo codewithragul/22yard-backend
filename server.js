@@ -13,6 +13,15 @@ const SHOP = process.env.SHOP;
 const TOKEN = process.env.TOKEN;
 const PORT = process.env.PORT || 3000;
 
+if (!SHOP || !TOKEN) {
+  console.error("Missing SHOP or TOKEN in .env");
+  process.exit(1);
+}
+
+app.get("/", (req, res) => {
+  res.send("Gift card API running");
+});
+
 app.post("/check-balance", async (req, res) => {
   const { code } = req.body;
 
@@ -49,22 +58,19 @@ app.post("/check-balance", async (req, res) => {
       });
     }
 
-    // 🔴 Check if card is deactivated
     if (matchedCard.disabled_at) {
       const disabledDate = new Date(matchedCard.disabled_at);
 
       return res.json({
         success: false,
-        message: `This gift card was Expiry on ${disabledDate.toLocaleString()}`
+        message: `This gift card expired on ${disabledDate.toLocaleString()}`
       });
     }
 
-    // 🟠 Check expiry
     if (matchedCard.expires_on) {
       const expiryDate = new Date(matchedCard.expires_on);
-      const now = new Date();
 
-      if (expiryDate < now) {
+      if (expiryDate < new Date()) {
         return res.json({
           success: false,
           message: `Your gift card expired on ${expiryDate.toLocaleString()}`
@@ -72,18 +78,14 @@ app.post("/check-balance", async (req, res) => {
       }
     }
 
-    // 🟢 Active card
     return res.json({
       success: true,
       balance: matchedCard.balance,
-      currency: matchedCard.currency,
-      message: `Active gift card. Balance: ${matchedCard.balance} ${matchedCard.currency}`
+      currency: matchedCard.currency
     });
 
   } catch (error) {
-    console.log("FULL ERROR:");
-    console.log(error.response?.data);
-    console.log(error.message);
+    console.log(error.response?.data || error.message);
 
     return res.status(500).json({
       success: false,
