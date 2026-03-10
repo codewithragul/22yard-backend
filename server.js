@@ -114,8 +114,12 @@ const SHOP = process.env.SHOP;
 const TOKEN = process.env.TOKEN;
 const PORT = process.env.PORT || 3000;
 
+console.log("ENV CHECK");
+console.log("SHOP =", process.env.SHOP);
+console.log("TOKEN exists =", !!process.env.TOKEN);
+
 if (!SHOP || !TOKEN) {
-  console.error("❌ Missing SHOP or TOKEN in .env");
+  console.error("❌ Missing SHOP or TOKEN environment variables");
   process.exit(1);
 }
 
