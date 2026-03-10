@@ -86,7 +86,7 @@ app.post("/check-balance", async (req, res) => {
 
       return res.json({
         success: false,
-        message: `This gift card was disabled on ${disabledDate.toLocaleDateString()}`
+        message: `This gift card was expired on ${disabledDate.toLocaleDateString()}`
       });
 
     }
