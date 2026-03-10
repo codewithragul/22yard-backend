@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "This is a Node.js backend used to check **Shopify Gift Card balance and expiry** for the 22Yard website.",
   "main": "server.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -19,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/codewithragul/22yard-backend/issues"
   },
-  "homepage": "https://github.com/codewithragul/22yard-backend#readme"
+  "homepage": "https://github.com/codewithragul/22yard-backend#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
 }
