@@ -108,37 +108,54 @@ const cors = require("cors");
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+
+/* CORS for Shopify storefront */
+app.use(cors({
+  origin: [
+    "https://twenty2yard.myshopify.com",
+    "https://two2yard-backend.onrender.com"
+  ],
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
 
 const SHOP = process.env.SHOP;
 const TOKEN = process.env.TOKEN;
 const PORT = process.env.PORT || 3000;
 
+/* Debug logs */
 console.log("ENV CHECK");
-console.log("SHOP =", process.env.SHOP);
-console.log("TOKEN exists =", !!process.env.TOKEN);
+console.log("SHOP =", SHOP);
+console.log("TOKEN exists =", !!TOKEN);
 
+/* Stop server if env missing */
 if (!SHOP || !TOKEN) {
   console.error("❌ Missing SHOP or TOKEN environment variables");
   process.exit(1);
 }
 
+/* Health check */
 app.get("/", (req, res) => {
-  res.send("Gift card API running");
+  res.send("Gift Card API running 🚀");
 });
 
+/* Gift card balance endpoint */
 app.post("/check-balance", async (req, res) => {
-  const { code } = req.body;
 
   try {
-    if (!code) {
+
+    const { code } = req.body;
+
+    if (!code || typeof code !== "string") {
       return res.status(400).json({
         success: false,
-        error: "Gift card code is required"
+        message: "Gift card code is required"
       });
     }
 
     const last4 = code.slice(-4).toLowerCase();
+
+    console.log("Checking gift card ending with:", last4);
 
     const response = await axios.get(
       `https://${SHOP}/admin/api/2024-01/gift_cards.json`,
@@ -150,39 +167,43 @@ app.post("/check-balance", async (req, res) => {
       }
     );
 
-    const giftCards = response.data.gift_cards;
+    const giftCards = response.data.gift_cards || [];
 
-    const matchedCard = giftCards.find(
-      (card) => card.last_characters?.toLowerCase() === last4
+    const matchedCard = giftCards.find(card =>
+      card.last_characters &&
+      card.last_characters.toLowerCase() === last4
     );
 
     if (!matchedCard) {
       return res.status(404).json({
         success: false,
-        error: "Invalid gift card"
+        message: "Invalid gift card"
       });
     }
 
+    /* Check disabled */
     if (matchedCard.disabled_at) {
       const disabledDate = new Date(matchedCard.disabled_at);
 
       return res.json({
         success: false,
-        message: `This gift card expired on ${disabledDate.toLocaleString()}`
+        message: `This gift card was disabled on ${disabledDate.toLocaleString()}`
       });
     }
 
+    /* Check expiry */
     if (matchedCard.expires_on) {
       const expiryDate = new Date(matchedCard.expires_on);
 
       if (expiryDate < new Date()) {
         return res.json({
           success: false,
-          message: `Your gift card expired on ${expiryDate.toLocaleString()}`
+          message: `Your gift card expired on ${expiryDate.toLocaleDateString()}`
         });
       }
     }
 
+    /* Return balance */
     return res.json({
       success: true,
       balance: matchedCard.balance,
@@ -190,15 +211,22 @@ app.post("/check-balance", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Shopify API error:", error.response?.data || error.message);
+
+    console.error(
+      "Shopify API error:",
+      error.response?.data || error.message
+    );
 
     return res.status(500).json({
       success: false,
-      error: "Server error while checking gift card balance"
+      message: "Unable to check gift card balance"
     });
+
   }
+
 });
 
+/* Start server */
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
